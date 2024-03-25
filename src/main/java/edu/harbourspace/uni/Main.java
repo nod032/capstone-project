@@ -1,17 +1,41 @@
 package edu.harbourspace.uni;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import edu.harbourspace.uni.inputParser.InputParser;
+
+import java.util.Arrays;
+import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+        // TODO: pass max-position
+        int maxPosition = parseMaxPosition(args);
+        OrderProcessor orderProcessor = new OrderProcessor(maxPosition);
+        InputReader inputReader = new InputReader();
+        InputParser inputParser = new InputParser(orderProcessor);
+
+        // TODO: create class MatchingEngine with only one method: (uses DEPENDENCY and FACADE patterns).
+        //  Arguments will be InputReader InputParser, OrderProcessor... and the rest of the things needed to simplify MAIN
+
+        for (String line : inputReader.getInput()) {
+            if ("FINISH".equals(line)) {
+                orderProcessor.getStoringResult().printExecutionMessages();
+                break;
+            } else {
+                inputParser.parseLine(line);
+            }
         }
     }
+
+
+    private static int parseMaxPosition(String[] args) {
+
+        String maxPosStr = Arrays.stream(args)
+                .filter(arg -> arg.startsWith("maximum-position="))
+                .findFirst()
+                .orElse("maximum-position=0");
+        return Integer.parseInt(maxPosStr.split("=")[1]);
+    }
+
+    //TODO: maven clean should be working.
+    // Java program should be able to wrap up the program into jar file (class files and byte code).
 }

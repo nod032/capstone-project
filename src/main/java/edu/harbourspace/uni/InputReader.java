@@ -5,17 +5,23 @@ import java.util.List;
 import java.util.Scanner;
 
 public class InputReader {
-    private final List<String> input;
-    public InputReader(){
+    private final List<String> input = new ArrayList<>();
+
+    public InputReader() {
         Scanner scanner = new Scanner(System.in);
-        input = new ArrayList<>();
-        while (scanner.hasNextLine()){
-            input.add(scanner.nextLine());
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            if ("FINISH".equals(line)) {
+                break;
+            } else {
+                input.add(line);
+            }
         }
-        scanner.close();
     }
 
     public List<String> getInput() {
         return input;
     }
 }
+
+

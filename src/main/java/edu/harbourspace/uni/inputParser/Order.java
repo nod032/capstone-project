@@ -1,27 +1,13 @@
 package edu.harbourspace.uni.inputParser;
 
-enum Originator{
-    DF, VE;
-}
-
-enum Side {
-    BUY, SELL
-}
-
-public class Order{
+public class Order {
     private final Originator originator;
     private final String messageID;
     private final Side side;
-    private final int size;
+    private int size; // Non-final to allow modification when partially executed
     private final double price;
     private final String productId;
-    private static final String terminatorMessage = "FINISH";
-    private static final String cancelMessage = "cancel";
-
-    public Order(Originator originator, String messageID) {
-        this.originator = originator;
-        this.messageID = messageID;
-    }
+    private OrderStatus orderStatus;
 
     public Order(Originator originator, String messageID, Side side, int size, double price, String productId) {
         this.originator = originator;
@@ -29,6 +15,51 @@ public class Order{
         this.side = side;
         this.size = size;
         this.price = price;
-        this.productId = productId;
+        this.productId = productId; // TODO: make them as separate class with only one string field.
+        this.orderStatus = OrderStatus.PENDING;
+    }
+
+    // TODO: Think if we need second constructor for cancelling orders.
+    public Originator getOriginator() {
+        return originator;
+    }
+
+    public String getMessageID() {
+        return messageID;
+    }
+
+    public Side getSide() {
+        return side;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public String getProductId() {
+        return productId;
+    }
+
+    public OrderStatus getOrderStatus() {
+        return orderStatus;
+    }
+
+    // Mutators
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public void setOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s\t%s\t%s\t%d\t%.3f\t%s",
+                originator, messageID, side, size, price, productId);
     }
 }
