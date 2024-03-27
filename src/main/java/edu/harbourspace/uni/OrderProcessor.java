@@ -12,14 +12,14 @@ public class OrderProcessor {
     private InputParser inputParser;
     List<String> inputLines;
 
-    public OrderProcessor(InputParser inputParser) {
+    public OrderProcessor() {
         this.inputParser = inputParser;
-        inputLines = inputParser.getInputReader().getInput();
+//        inputLines = inputParser.getInputReader().getInput();
     }
 
     // TODO: Orderprocessor.process(Order)
 
-    public void processOrders() {
+    public List<Trade> processOrders(List<Order> orders) {
 
         for(String line : inputLines){
             String[] parts = line.split(" ");

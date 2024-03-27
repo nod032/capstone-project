@@ -22,7 +22,6 @@ public class InputReader {
             }
         }
         scanner.close();
-
     }
 
     public List<String> getInput() {
