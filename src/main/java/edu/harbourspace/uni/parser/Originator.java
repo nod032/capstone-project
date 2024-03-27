@@ -1,4 +1,4 @@
-package edu.harbourspace.uni.inputParser;
+package edu.harbourspace.uni.parser;
 
 public enum Originator {
     DF, VE;

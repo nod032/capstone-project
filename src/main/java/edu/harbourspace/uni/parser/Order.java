@@ -1,4 +1,4 @@
-package edu.harbourspace.uni.inputParser;
+package edu.harbourspace.uni.parser;
 
 public class Order {
     private final Originator originator;
@@ -19,7 +19,6 @@ public class Order {
         this.orderStatus = OrderStatus.PENDING;
     }
 
-    // TODO: Think if we need second constructor for cancelling orders.
     public Originator getOriginator() {
         return originator;
     }
