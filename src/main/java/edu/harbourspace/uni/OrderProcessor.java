@@ -1,132 +1,89 @@
 package edu.harbourspace.uni;
 
-import edu.harbourspace.uni.parser.*;
+import edu.harbourspace.uni.orders.*;
 
 import java.util.*;
 
 public class OrderProcessor {
-    private final Map<String, Order> orders = new HashMap<>();
-    private final List<String> executedOrders = new ArrayList<>();
+    private final Map<String, Order> mappedOrders = new HashMap<>();
     private int currentPosition = 0;
-    private StoringResult storingResult = new StoringResult();
-    private InputParser inputParser;
-    List<String> inputLines;
+    List<Trade> trades = new ArrayList<>();
 
-    public OrderProcessor(InputParser inputParser) {
-        this.inputParser = inputParser;
-        inputLines = inputParser.getInputReader().getInput();
-    }
-
-    // TODO: Orderprocessor.process(Order)
-
-    public void processOrders() {
-
-        for(String line : inputLines){
-            String[] parts = line.split(" ");
-
-            // Throw exception for wrong amount of input data
-            if(parts.length != 6 && parts.length != 3) {
-                throw new InputMismatchException();
-            }
-
-            //TODO: if only part of the order is executed, keep the other part in PENDING
-            if (parts.length == 3 && "cancel".equalsIgnoreCase(parts[2])) {
-                for(Order o : orders.values()){
-                    if(Objects.equals(o.getMessageID(), parts[1])) {
-                        o.setOrderStatus(OrderStatus.CANCELLED);
-                        break;
-                    }
+    public void processOrders (List<Order> orders, int maxPosition){
+        for(Order order : orders){
+            if (order.getOrderType() == OrderType.CANCEL_ORDER){
+                mappedOrders.remove(order.getMessageID());
+            } else {
+                mappedOrders.put(order.getMessageID(), order);
+                if (order.getOriginator() == Originator.VE) {
+                    executeOrder(order, maxPosition);
                 }
-                continue;
-            }
-
-            Order order = inputParser.parseLine(parts);
-            orders.put(order.getMessageID(), order);
-
-            if (order.getOriginator() == Originator.VE) {
-                executeOrderImmediately(order);
             }
         }
     }
+    //TODO: 1st example printing 2 orders instead of cumulative one
+    //TODO: DF, VE reversed case
+    //TODO: if part of DF is executed, keep the other part of Order
+    // TODO: DF orders to be accumulated until EXECUTED or CANCELLED.
 
-    private void executeOrderImmediately(Order veOrder) {
-//TODO: separate the body into several methods, 1st example printing 2 orders instead of cumulative one
-        List<Order> matchableDFOrders = new ArrayList<>(orders.values()
-                .stream()
-                .filter(order -> order.getProductId()
-                        .equals(veOrder.getProductId()) &&
-                        order.getSide() != veOrder.getSide() &&
-                        order.getOrderStatus() == OrderStatus.PENDING)
-                .toList());
 
-        int totalMatchableDFSize = matchableDFOrders.stream().mapToInt(Order::getSize).sum();
-        //System.out.println("totalMatchableDFSize = " + totalMatchableDFSize);
-        //System.out.println("matchableDFOrders = " + matchableDFOrders);
+    public void executeOrder(Order veOrder, int maxPosition){
+        List<Order> matchableDFOrders = listMatchableDFOrders(veOrder);
+        if(isExecutable(matchableDFOrders, veOrder, maxPosition)){
 
-        //TODO: if part of DF is executed, keep the other part of Order
-        for (Order dfOrder : matchableDFOrders) {
-            // Here we check if execution is possible based on price and position limits
-            if (canExecuteOrder(dfOrder, veOrder, totalMatchableDFSize)
-                    && veOrder.getSize() <= totalMatchableDFSize) {
-                //int executedSize = Math.min(dfOrder.getSize(), veOrder.getSize());
-                int executedSize = veOrder.getSize();
-
-                // TODO: DF orders to be accumulated until EXECUTED or CANCELLED.
-                if (dfOrder.getSide() == Side.BUY) {
-                    currentPosition += executedSize;
-                } else {
-                    currentPosition -= executedSize;
-                }
-
-                dfOrder.setSize(dfOrder.getSize() - executedSize);
-                veOrder.setSize(veOrder.getSize() - executedSize);
-                orders.put(veOrder.getMessageID(),
-                        new Order(veOrder.getOriginator(),
-                                veOrder.getMessageID(),
-                                veOrder.getSide(),
-                                veOrder.getSize(),
-                                veOrder.getPrice(),
-                                veOrder.getProductId()
-                        ));
-
-                // Mark orders as executed if their size is zero
-                if (dfOrder.getSize() == 0){
-                    //System.out.println("DF=0:  For order: " + dfOrder +  ", size = " + dfOrder.getSize());
-                    dfOrder.setOrderStatus(OrderStatus.EXECUTED);
-                    matchableDFOrders.removeIf(e -> e.getMessageID().equals(dfOrder.getMessageID()));
-//                } else {
-//                    dfOrder.setOrderStatus(OrderStatus.PENDING);
-                }
-                if (veOrder.getSize() == 0) {
-                    //System.out.println("VE = 0:  For order: " + veOrder +  ", size = " + veOrder.getSize());
-                    //System.out.println("VE = 0:  For order: " + dfOrder +  ", size = " + dfOrder.getSize());
+            int executedSize = veOrder.getSize();
+            for(Order matchableDfOrder : matchableDFOrders){
+                currentPosition += (veOrder.getSide() == Side.SELL ? executedSize : -executedSize);
+                if(matchableDfOrder.getSize() > executedSize) {
+                    generateTrade(matchableDfOrder, veOrder.getSize(), veOrder.getPrice());
+                    matchableDfOrder.setSize(matchableDfOrder.getSize() - executedSize);
+                    mappedOrders.put(matchableDfOrder.getMessageID(), matchableDfOrder);
+                    veOrder.setSize(0);
                     veOrder.setOrderStatus(OrderStatus.EXECUTED);
-                    //matchableDFOrders.removeIf(e -> e.getMessageID().equals(veOrder.getMessageID()));
+                    break;
+                } else {
+                    generateTrade(matchableDfOrder, matchableDfOrder.getSize(), veOrder.getPrice());
+                    matchableDfOrder.setSize(0);
+                    veOrder.setSize(veOrder.getSize() - executedSize);
+                    matchableDfOrder.setOrderStatus(OrderStatus.EXECUTED);
+                    //matchableDFOrders.removeIf(e -> e.getMessageID().equals(matchableDfOrder.getMessageID()));
+                    //TODO: check if works for every case or should be considered specifically
                 }
-
-                String executionMessage = String.format("%s\t%d\t%.1f\t%s",
-                        dfOrder.getSide(), executedSize, veOrder.getPrice(), dfOrder.getProductId());
-                storingResult.addExecutionMessage(executionMessage);
-
-                if (veOrder.getSize() == 0) break; // Exit if the VE order is fully matched
             }
+            mappedOrders.put(veOrder.getMessageID(), veOrder);
         }
     }
-
-    private boolean canExecuteOrder(Order dfOrder, Order veOrder, int totalMatchableDFSize) {
-
-        boolean priceCompatibilityMatches =
-                (dfOrder.getSide() == Side.BUY && dfOrder.getPrice() >= veOrder.getPrice()) ||
-                (dfOrder.getSide() == Side.SELL && dfOrder.getPrice() <= veOrder.getPrice()) ;
-
-        int possiblePosition = currentPosition + (dfOrder.getSide() == Side.BUY ? veOrder.getSize() : -veOrder.getSize());
-        boolean withinPositionLimit = Math.abs(possiblePosition) <= inputParser.getInputReader().getMaxPosition();
+    public List<Order> listMatchableDFOrders (Order veOrder){
+        return new ArrayList<>(mappedOrders.values()
+                .stream()
+                .filter(order ->
+                        order.getProductId() != null &&
+                        order.getProductId().equals(veOrder.getProductId()) &&
+                                order.getSide() != veOrder.getSide() &&
+                                order.getOrderStatus() == OrderStatus.PENDING &&
+                                ((order.getSide() == Side.BUY && order.getPrice() >= veOrder.getPrice()) ||
+                                        (order.getSide() == Side.SELL && order.getPrice() <= veOrder.getPrice()))
+                ).toList());
+    }
+    public boolean isExecutable(List<Order> matchableDFOrders, Order veOrder, int maxPosition){
+        int totalMatchableDFSize = matchableDFOrders.stream().mapToInt(Order::getSize).sum();
+        int possiblePosition = currentPosition + (veOrder.getSide() == Side.SELL ? veOrder.getSize() : -veOrder.getSize());
+        boolean withinPositionLimit = Math.abs(possiblePosition) <= maxPosition;
         boolean venueSizeLimit = totalMatchableDFSize >= veOrder.getSize();
-        return priceCompatibilityMatches && withinPositionLimit && venueSizeLimit;
+        return withinPositionLimit && venueSizeLimit;
+    }
+    public void generateTrade (Order order, int size, double price) {
+        Trade trade;
+        trade = new Trade(
+                order.getSide(),
+                size,
+                price,
+                order.getProductId());
+        trades.add(trade);
     }
 
-    public StoringResult getStoringResult() {
-        return storingResult;
+    public List<Trade> getTrades() {
+        return trades;
     }
 }
 

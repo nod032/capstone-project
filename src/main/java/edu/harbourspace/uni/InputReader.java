@@ -25,7 +25,7 @@ public class InputReader {
 
     }
 
-    public List<String> getInput() {
+    public List<String> readInput() {
         return input;
     }
     public int getMaxPosition() { return maxPosition; }
