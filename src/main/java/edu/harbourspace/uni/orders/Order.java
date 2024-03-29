@@ -1,24 +1,71 @@
 package edu.harbourspace.uni.orders;
 
-public abstract class Order {
-    public abstract String getId();
-    public abstract OrderType getOrderType();
-    public abstract Originator getOriginator();
+public class Order{
+    private final Originator originator;
+    private final String messageID;
+    private Side side;
+    private int size;
+    private double price;
+    private String productId;
+    private OrderStatus orderStatus;
+    private final OrderType orderType;
+    public Order(Originator originator, String messageID, Side side, int size, double price, String productId) {
+        this.originator = originator;
+        this.messageID = messageID;
+        this.side = side;
+        this.size = size;
+        this.price = price;
+        this.productId = productId;
+        this.orderStatus = OrderStatus.PENDING;
+        this.orderType = OrderType.CREATE_ORDER;
+    }
+    public Order(Originator originator, String messageID){
+        this.originator = originator;
+        this.messageID = messageID;
+        this.orderType = OrderType.CANCEL_ORDER;
+    }
 
-    public abstract String getMessageID();
+    public String getId() {
+        return this.messageID;
+    }
 
-    public abstract Side getSide();
+    public OrderType getOrderType() {
+        return this.orderType;
+    }
+    public Originator getOriginator() {
+        return originator;
+    }
 
-    public abstract int getSize();
+    public String getMessageID() {
+        return messageID;
+    }
 
-    public abstract double getPrice();
+    public Side getSide() {
+        return side;
+    }
 
-    public abstract String getProductId();
+    public int getSize() {
+        return size;
+    }
 
-    public abstract OrderStatus getOrderStatus();
-    public abstract void setSize(int size);
+    public double getPrice() {
+        return price;
+    }
 
-    public abstract void setOrderStatus(OrderStatus orderStatus);
+    public String getProductId() {
+        return productId;
+    }
 
+    public OrderStatus getOrderStatus() {
+        return orderStatus;
+    }
 
+    // Mutators
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public void setOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
 }

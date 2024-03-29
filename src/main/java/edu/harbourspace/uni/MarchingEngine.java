@@ -8,13 +8,16 @@ public class MarchingEngine {
     private final InputReader inputReader;
     private final InputParser inputParser;
     private final OrderProcessor orderProcessor;
+    private final TradePrinter tradePrinter;
 
     public MarchingEngine(InputReader inputReader,
                           InputParser inputParser,
-                          OrderProcessor orderProcessor) {
+                          OrderProcessor orderProcessor,
+                          TradePrinter tradePrinter) {
         this.inputReader = inputReader;
         this.inputParser = inputParser;
         this.orderProcessor = orderProcessor;
+        this.tradePrinter = tradePrinter;
     }
 
     public void executeProcess(int maxPosition){
@@ -22,7 +25,7 @@ public class MarchingEngine {
         List<Order> orders = inputParser.parseInput(input);
         orderProcessor.processOrders(orders, maxPosition);
         List<Trade> trades = orderProcessor.getTrades();
-        TradePrinter tradePrinter = new TradePrinter();
-        tradePrinter.printTrade(trades);
+        tradePrinter.processTrades(trades);
+        tradePrinter.logTrades();
     }
 }

@@ -12,6 +12,7 @@ public class InputReader {
         System.out.println("Enter max-position: ");
         Scanner scanner = new Scanner(System.in);
         maxPosition = scanner.nextInt();
+        System.out.println("Enter the orders");
         scanner.nextLine();
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();

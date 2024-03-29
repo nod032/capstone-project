@@ -5,13 +5,14 @@ import edu.harbourspace.uni.orders.*;
 import java.util.*;
 
 public class OrderProcessor {
-    private final Map<String, Order> mappedOrders = new HashMap<>();
+    private final Map<String, Order> mappedOrders = new LinkedHashMap<>();
     private int currentPosition = 0;
     List<Trade> trades = new ArrayList<>();
 
     public void processOrders (List<Order> orders, int maxPosition){
         for(Order order : orders){
             if (order.getOrderType() == OrderType.CANCEL_ORDER){
+                order.setOrderStatus(OrderStatus.CANCELLED);
                 mappedOrders.remove(order.getMessageID());
             } else {
                 mappedOrders.put(order.getMessageID(), order);
@@ -21,16 +22,9 @@ public class OrderProcessor {
             }
         }
     }
-    //TODO: 1st example printing 2 orders instead of cumulative one
-    //TODO: DF, VE reversed case
-    //TODO: if part of DF is executed, keep the other part of Order
-    // TODO: DF orders to be accumulated until EXECUTED or CANCELLED.
-
-
     public void executeOrder(Order veOrder, int maxPosition){
         List<Order> matchableDFOrders = listMatchableDFOrders(veOrder);
         if(isExecutable(matchableDFOrders, veOrder, maxPosition)){
-
             int executedSize = veOrder.getSize();
             for(Order matchableDfOrder : matchableDFOrders){
                 currentPosition += (veOrder.getSide() == Side.SELL ? executedSize : -executedSize);
@@ -46,8 +40,6 @@ public class OrderProcessor {
                     matchableDfOrder.setSize(0);
                     veOrder.setSize(veOrder.getSize() - executedSize);
                     matchableDfOrder.setOrderStatus(OrderStatus.EXECUTED);
-                    //matchableDFOrders.removeIf(e -> e.getMessageID().equals(matchableDfOrder.getMessageID()));
-                    //TODO: check if works for every case or should be considered specifically
                 }
             }
             mappedOrders.put(veOrder.getMessageID(), veOrder);

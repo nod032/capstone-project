@@ -14,7 +14,6 @@ public class Trade {
         this.price = price;
         this.productId = productId;
     }
-
     public Side getSide() {
         return side;
     }
